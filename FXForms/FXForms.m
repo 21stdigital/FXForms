@@ -93,8 +93,8 @@ static const CGFloat FXFormFieldLabelSpacing = 5;
 static const CGFloat FXFormFieldMinLabelWidth = 97;
 static const CGFloat FXFormFieldMaxLabelWidth = 240;
 static const CGFloat FXFormFieldMinFontSize = 12;
-static const CGFloat FXFormFieldPaddingLeft = 10;
-static const CGFloat FXFormFieldPaddingRight = 10;
+static const CGFloat FXFormFieldPaddingLeft = 12;
+static const CGFloat FXFormFieldPaddingRight = 12;
 static const CGFloat FXFormFieldPaddingTop = 12;
 static const CGFloat FXFormFieldPaddingBottom = 12;
 
@@ -998,7 +998,10 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
             if ([self.type isEqualToString:FXFormFieldTypeNumber] ||
                 [self.type isEqualToString:FXFormFieldTypeFloat])
             {
-                value = [(NSString *)value length]? @([value doubleValue]): nil;
+                NSNumberFormatter *f = [[NSNumberFormatter alloc] init];
+                f.numberStyle = NSNumberFormatterDecimalStyle;
+                NSNumber *n = [f numberFromString:value];
+                value = [(NSString *)value length]? n : nil;
             }
             else if ([self.type isEqualToString:FXFormFieldTypeInteger] ||
                      [self.type isEqualToString:FXFormFieldTypeUnsigned])
@@ -2183,6 +2186,26 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
         
         [tableView endUpdates];
     }
+    else if (editingStyle == UITableViewCellEditingStyleInsert)
+    {
+        [tableView beginUpdates];
+        
+        FXFormSection *section = [self sectionAtIndex:indexPath.section];
+        [section addNewField];
+        [tableView insertRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+        [tableView endUpdates];
+        
+        UITableViewCell<FXFormFieldCell> *cell = (UITableViewCell<FXFormFieldCell> *)[tableView cellForRowAtIndexPath:indexPath];
+        
+        FXFormField *field = cell.field;
+        FXFormController *formController = field.formController;
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            
+            [formController tableView:tableView didSelectRowAtIndexPath:indexPath];
+            [tableView selectRowAtIndexPath:indexPath animated:NO scrollPosition:UITableViewScrollPositionNone];
+        });
+    }
 }
 
 - (void)tableView:(__unused UITableView *)tableView moveRowAtIndexPath:(NSIndexPath *)sourceIndexPath toIndexPath:(NSIndexPath *)destinationIndexPath
@@ -2696,6 +2719,20 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
     //override
 }
 
+- (void)doneButtonTapped:(UIBarButtonItem *)item {
+    [self resignFirstResponder];
+}
+
+- (UIView *)inputAccessoryView
+{
+    UIToolbar *toolBar = [[UIToolbar alloc] initWithFrame:CGRectMake(0.0f, 0.0f, CGRectGetWidth(self.bounds), 44)];
+    UIBarButtonItem *barButtonDone = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(doneButtonTapped:)];
+    UIBarButtonItem *flex = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:self action:nil];
+    [toolBar setItems:@[flex, barButtonDone]];
+    
+    return toolBar;
+}
+
 @end
 
 
@@ -2844,7 +2881,7 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
     self.textField.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleBottomMargin |UIViewAutoresizingFlexibleLeftMargin;
     self.textField.font = [UIFont systemFontOfSize:self.textLabel.font.pointSize];
     self.textField.minimumFontSize = FXFormLabelMinFontSize(self.textLabel);
-    self.textField.textColor = [UIColor colorWithRed:0.275f green:0.376f blue:0.522f alpha:1.000f];
+    self.textField.textColor = [[[UIApplication sharedApplication] keyWindow] tintColor];
     self.textField.delegate = self;
     [self.contentView addSubview:self.textField];
     
@@ -2945,7 +2982,7 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
     {
         self.textField.autocorrectionType = UITextAutocorrectionTypeNo;
         self.textField.autocapitalizationType = UITextAutocapitalizationTypeNone;
-        self.textField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
+        self.textField.keyboardType = UIKeyboardTypeDecimalPad;
         self.textField.textAlignment = NSTextAlignmentRight;
     }
     else if ([self.field.type isEqualToString:FXFormFieldTypePassword])
@@ -2993,10 +3030,10 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
     return YES;
 }
 
-- (void)textFieldDidBeginEditing:(__unused UITextField *)textField
-{
-    [self.textField selectAll:nil];
-}
+//- (void)textFieldDidBeginEditing:(__unused UITextField *)textField
+//{
+//    [self.textField selectAll:nil];
+//}
 
 - (void)textDidChange
 {
@@ -3080,7 +3117,7 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
     self.textView = [[UITextView alloc] initWithFrame:CGRectMake(0, 0, 320, 21)];
     self.textView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleRightMargin;
     self.textView.font = [UIFont systemFontOfSize:17];
-    self.textView.textColor = [UIColor colorWithRed:0.275f green:0.376f blue:0.522f alpha:1.000f];
+    self.textView.textColor = [[[UIApplication sharedApplication] keyWindow] tintColor];
     self.textView.backgroundColor = [UIColor clearColor];
     self.textView.delegate = self;
     self.textView.scrollEnabled = NO;
@@ -3185,10 +3222,10 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
     }
 }
 
-- (void)textViewDidBeginEditing:(__unused UITextView *)textView
-{
-    [self.textView selectAll:nil];
-}
+//- (void)textViewDidBeginEditing:(__unused UITextView *)textView
+//{
+//    [self.textView selectAll:nil];
+//}
 
 - (void)textViewDidChange:(UITextView *)textView
 {
@@ -3428,6 +3465,12 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
         [self resignFirstResponder];
     }
     [tableView deselectRowAtIndexPath:tableView.indexPathForSelectedRow animated:YES];
+}
+
+- (void)doneButtonTapped:(UIBarButtonItem *)item {
+    [self valueChanged];
+    
+    [super doneButtonTapped:item];
 }
 
 @end
@@ -3679,6 +3722,12 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
     [self setNeedsLayout];
     
     if (self.field.action) self.field.action(self);
+}
+
+- (void)doneButtonTapped:(UIBarButtonItem *)item {
+    [self pickerView:self.pickerView didSelectRow:[self.pickerView selectedRowInComponent:0] inComponent:0];
+    
+    [super doneButtonTapped:item];
 }
 
 @end

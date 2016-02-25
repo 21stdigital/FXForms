@@ -2186,6 +2186,11 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
         
         [tableView endUpdates];
     }
+    
+    //////////////////
+    // possible bug //
+    //////////////////
+    
     else if (editingStyle == UITableViewCellEditingStyleInsert)
     {
         [tableView beginUpdates];
@@ -2585,6 +2590,11 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
 #pragma mark -
 #pragma mark Views
 
+@interface FXFormBaseCell ()
+
+@property (nonatomic, strong) UIView *inputAView;
+
+@end
 
 @implementation FXFormBaseCell
 
@@ -2719,18 +2729,29 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
     //override
 }
 
+//////////////////
+// possible bug //
+//////////////////
+
 - (void)doneButtonTapped:(UIBarButtonItem *)item {
     [self resignFirstResponder];
 }
 
+//////////////////
+// possible bug //
+//////////////////
+
 - (UIView *)inputAccessoryView
 {
-    UIToolbar *toolBar = [[UIToolbar alloc] initWithFrame:CGRectMake(0.0f, 0.0f, CGRectGetWidth(self.bounds), 44)];
-    UIBarButtonItem *barButtonDone = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(doneButtonTapped:)];
-    UIBarButtonItem *flex = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:self action:nil];
-    [toolBar setItems:@[flex, barButtonDone]];
+    if (!self.inputAView) {
+        UIToolbar *toolBar = [[UIToolbar alloc] initWithFrame:CGRectMake(0.0f, 0.0f, CGRectGetWidth(self.bounds), 44)];
+        UIBarButtonItem *barButtonDone = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(doneButtonTapped:)];
+        UIBarButtonItem *flex = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:self action:nil];
+        [toolBar setItems:@[flex, barButtonDone]];
+        self.inputAView = toolBar;
+    }
     
-    return toolBar;
+    return self.inputAView;
 }
 
 @end
@@ -3467,6 +3488,10 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
     [tableView deselectRowAtIndexPath:tableView.indexPathForSelectedRow animated:YES];
 }
 
+//////////////////
+// possible bug //
+//////////////////
+
 - (void)doneButtonTapped:(UIBarButtonItem *)item {
     [self valueChanged];
     
@@ -3723,6 +3748,10 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
     
     if (self.field.action) self.field.action(self);
 }
+
+//////////////////
+// possible bug //
+//////////////////
 
 - (void)doneButtonTapped:(UIBarButtonItem *)item {
     [self pickerView:self.pickerView didSelectRow:[self.pickerView selectedRowInComponent:0] inComponent:0];
